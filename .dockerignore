@@ -1,0 +1,9 @@
+# Ignore virtual environment folders
+venv/
+
+# Ignore data
+data/  
+
+#Ignore Git files
+.git
+.gitignore

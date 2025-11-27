@@ -1,0 +1,43 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+
+    # "Automate linting"
+    - name: Run Linter
+      run: |
+        pylint --disable=R,C app.py
+
+    # "Unit testing"
+    - name: Run Unit Tests
+      run: |
+        pytest tests/
+
+    # "Docker image building"
+    - name: Login to Amazon ECR
+      # Skip actual login if secrets aren't set
+      if: env.AWS_ACCESS_KEY_ID != ''
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build Docker Image
+      run: |
+        docker build -t crime-api .

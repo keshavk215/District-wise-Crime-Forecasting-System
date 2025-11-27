@@ -1,60 +1,136 @@
-# 🧠 District-wise Crime Forecasting System (India, 2017–2022)
+# 🚓 District-wise Crime Forecasting System
 
-A full-stack machine learning project for forecasting district-level IPC crimes in India using historical data. Combines statistical and deep learning models with an interactive Streamlit frontend and Flask backend API for real-time, dynamic predictions.
+## 📌 Project Overview
 
+This project is an end-to-end **Machine Learning system** designed to predict daily crime trends. It features a hybrid forecasting engine (LSTM & XGBoost), a fully containerized **FastAPI** backend with rate-limiting, and an automated CI/CD pipeline.
 
-## 🚀 Project Overview
+The system is designed with a **Cloud-First** mindset. It utilizes an **Adapter Pattern** to abstract storage logic, allowing the application to switch seamlessly between local development (Filesystem) and production cloud infrastructure (AWS S3 & RDS) via configuration flags.
 
-This project predicts district-wise crime counts across different crime types (e.g., murder, robbery) using structured NCRB data from 2017 to 2022. It uses both classical ML (Random Forest) and deep learning (LSTM) models with window-based time series forecasting. The trained models are deployed through a Flask REST API and integrated into a dynamic Streamlit UI for real-time inference.
+## 📊 Dataset
+
+The model is built upon the [**Crimes in Boston**](https://www.kaggle.com/datasets/AnalyzeBoston/crimes-in-boston "null") dataset (2015-2018), provided by Analyze Boston.
+
+* **Source:** Real-world incident reports including time, location, and offense descriptions.
+* **Preprocessing Strategy:**
+  * **Filtering:** Focused analysis on the **Top 5** most frequent crime types and districts to ensure statistical significance.
+  * **Imputation:** Implemented logic to handle missing dates (days with zero reported crimes), creating a continuous time-series essential for LSTM performance.
+  * **Normalization:** Applied MinMax scaling to normalize feature distributions for deep learning optimization.
+
+## 🚀 Key Features
+
+### 🏗️ SDE & DevOps Architecture
+
+* **Decoupled Microservices:** Separate containers for Data Ingestion (ETL), Model Training, and Inference, orchestrated via  **Docker Compose** .
+* **Cloud Infrastructure Simulation:** Implements a custom `StorageManager` to mimic **AWS S3** (artifact storage) and **RDS** (structured data) locally, enabling zero-cost cloud-native development.
+* **Infrastructure as Code (IaC):** Includes **Terraform** configuration (`main.tf`) to provision ECS Clusters, ECR Repositories, and API Gateways.
+* **Secure API:** Implements **Rate Limiting** (via `slowapi`) to simulate API Gateway throttling policies.
+* **CI/CD Pipeline:** GitHub Actions workflow (`deploy.yml`) that automates linting (`pylint`), unit testing (`pytest`), and Docker image builds.
+
+### 🧠 Data Science & Machine Learning
+
+* **Hybrid Forecasting Engine:** Benchmarks **XGBoost** vs.  **LSTM** , achieving an MAE of  **~1.27** .
+* **Advanced Feature Engineering:** Automated generation of Lag features (1-day, 7-day), Rolling Means, and Temporal embedding.
+* **Model Interpretability:** Integrated **SHAP** (SHapley Additive exPlanations) to interpret model decision
 
 ## 🛠️ Tech Stack
 
-* **Languages & Tools** : Python, NumPy, Pandas, Matplotlib, Seaborn
-* **ML/DL Libraries** : scikit-learn, TensorFlow, Keras
-* **Web Frameworks** : Flask (REST API), Streamlit (frontend UI)
+* **Language:** Python 3.9
+* **ML Frameworks:** TensorFlow (Keras), XGBoost, Scikit-Learn, SHAP
+* **Backend:** FastAPI, Uvicorn, SlowAPI
+* **Visualization:** Streamlit, Seaborn, Matplotlib
+* **Cloud & DevOps:** Docker, Docker Compose, GitHub Actions, Terraform
+* **Testing:** Pytest, Pylint
 
-## 🧩 Features
+## ⚙️ How to Run
 
-* 📈 **District-wise crime trend prediction**
-* 🔄 **Supports multiple models** (classical ML and deep learning)
-* 🧠 **LSTM time-series forecasting** using sliding windows
-* ⚙️  **Modular model architecture** , extendable to more crime categories
-* 🌐 **REST API interface** built with Flask
-* 🎛️ **Frontend dashboard** built in Streamlit
-
-## How to Run Locally
-
-### 1. Clone the repo
+## 📂 Project Structure
 
 ```
+District-wise-Crime-Forecasting-System/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # CI/CD pipeline (Linting, Testing, Build)
+├── data/
+│   └── (Place your .csv files here)
+├── infrastructure/         # Terraform IaC (AWS Config)
+│   └── main.tf
+├── models/
+│   ├── crime_lstm_model.h5 # Trained Deep Learning Model
+│   ├── crime_xgb_model.pkl # Trained XGBoost Model
+│   └── scaler.pkl          # Scaler for data normalization
+├── tests/                  # Unit Tests
+│   └── test_api.py
+├── storage_manager.py      # AWS/Local Storage Adapter
+├── venv/                   # Virtual Environment
+├── analytics_dashboard.py  # Streamlit Dashboard script
+├── app.py                  # Inference API (FastAPI)
+├── data_processor.py       # Data cleaning & preprocessing pipeline
+├── Dockerfile              # Docker container configuration
+├── docker-compose.yml      # Multi-container orchestration
+├── model_engine.py         # Model training script
+├── README.md               # Project Documentation
+└── requirements.txt        # Python dependencies
+```
+
+### 1. Setup Environment
+
+```
+# Clone the repository
 git clone https://github.com/keshavk215/District-wise-Crime-Forecasting-System.git
 cd District-wise-Crime-Forecasting-System
-```
 
-### 2. Install dependencies
-
-```
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Start the Flask API
+### 2. Data Processing & Training
+
+Run the pipeline to generate clean data and train the models.
+
+```
+# Clean the raw data
+python data_processor.py
+
+# Train LSTM & XGBoost models (Generates .h5 and .pkl files)
+python model_engine.py
+```
+
+### 3. Start the Inference API
 
 ```
 python app.py
 ```
 
-### 4. Start the Streamlit Dashboard
+* Access Swagger UI at: `http://localhost:8000/docs`
+* Test Endpoint: `POST /predict`
+
+### 4. Run the Analytics Dashboard
 
 ```
-streamlit run streamlit_app.py
+streamlit run analytics_dashboard.py
 ```
 
+### 5. Run Tests (CI/CD Simulation)
 
+```
+# Run Unit Tests
+pytest tests/
 
-## 📦 Future Extensions
+# Run Linter
+pylint --disable=R,C app.py
+```
 
-* 🔐 Cybercrime category modeling
-* 🗺️ Interactive map visualization using Folium or Leaflet.js
-* 📬 Email alerts / SMS notifications for predicted crime spikes
-* 🧠 Use CNN+RNN for more complex spatial-temporal patterns
-* 🧩 Serve model on cloud (Render, Railway, or Heroku)
+### 6. Run with Docker Compose (Full System Simulation)
+
+This command spins up the API, Database, and Worker simulations.
+
+```
+docker-compose up --build
+```
+
+## 🧠 Model Performance
+
+The system evaluates multiple architectures to ensure optimal accuracy:
+
+* **Metric:** Mean Absolute Error (MAE)
+* **Result:** The **LSTM (Long Short-Term Memory)** network outperformed the XGBoost baseline, successfully capturing complex temporal dependencies and seasonality in the crime data.

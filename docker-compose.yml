@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Microservice 1: The Inference API (Always Running)
+  inference-api:
+    build: .
+    container_name: crime-inference-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models  # Simulates S3 (Model Registry)
+      - ./data:/app/data      # Simulates RDS (Data Store)
+    environment:
+      - ENV=PRODUCTION
+      - DB_HOST=postgres-db
+    depends_on:
+      - postgres-db
+
+  # Microservice 2: Data Ingestion (Runs once then exits)
+  ingestion-pipeline:
+    build: .
+    container_name: crime-ingestion-worker
+    command: python data_processor.py
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - postgres-db
+
+  # Microservice 3: Model Trainer (Runs once then exits)
+  training-worker:
+    build: .
+    container_name: crime-training-worker
+    command: python model_engine.py
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+
+  # The "RDS" Database (Simulated)
+  postgres-db:
+    image: postgres:13-alpine
+    container_name: crime-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: crime_db
+    ports:
+      - "5432:5432"
